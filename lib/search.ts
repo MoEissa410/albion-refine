@@ -74,11 +74,17 @@ export function formatRelativeTime(dateString: string): string {
  * CONSTRUCTS ALBION ITEM IDs WITH ENCHANTMENTS
  */
 export function withEnchant(itemId: string, enchant?: number | string) {
-  const e = String(enchant);
-  let base = itemId.split("@")[0].replace(/_LEVEL[1-4]$/, "");
+  const e = String(enchant || "0"); // Default to strict "0" if undefined
 
-  if (!e || e === "0") return base;
+  // 1. STRIP existing suffixes to get the clean base ID
+  // Removes @1, @2 etc. AND _LEVEL1, _LEVEL2 etc.
+  let base = itemId.split("@")[0]; // remove @ suffix
+  base = base.replace(/_LEVEL[1-4]$/, ""); // remove _LEVEL suffix
 
+  // 2. If target enchantment is 0, return the clean base
+  if (e === "0") return base;
+
+  // 3. Handle Resource vs Item Logic
   // Resources use _LEVEL format, others use @ format
   const isResource =
     /(^|_)(ORE|WOOD|ROCK|FIBER|HIDE|PLANKS|METALBAR|STONEBLOCK|CLOTH|LEATHER|RESOURCES_)/.test(

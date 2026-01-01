@@ -3,10 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Clock } from "lucide-react";
-import { AlbionItem } from "@/lib/types";
-import { getItemIcon } from "@/lib/search";
+import { AlbionItem, AlbionPrice } from "@/lib/types";
+import { getItemIcon, withEnchant } from "@/lib/search";
 import { useQuery } from "@tanstack/react-query";
 import { getItemPrices } from "@/lib/prices";
+import { getCityStyle } from "@/lib/city-utils";
 import RelativeTime from "./RelativeTime";
 
 /**
@@ -19,12 +20,50 @@ import RelativeTime from "./RelativeTime";
 interface SearchResultsListProps {
   items: AlbionItem[];
   query: string;
+  selectedCities: string[];
+  selectedQualities: number[];
+  enchantment: string;
 }
 
 export default function SearchResultsList({
   items,
   query,
+  selectedCities,
+  selectedQualities,
+  enchantment,
 }: SearchResultsListProps) {
+  // BATCH FETCHING STRATEGY
+  const targetIds = React.useMemo(() => {
+    return items.map((item) => {
+      // If enchantment is "0" (default), we preserve the item's original ID (As-Is).
+      // Only if the user strictly selects a non-zero enchantment (e.g. .1, .2) do we override.
+      if (enchantment && enchantment !== "0") {
+        return withEnchant(item.UniqueName, enchantment);
+      }
+      return item.UniqueName;
+    });
+  }, [items, enchantment]);
+
+  const joinedIds = targetIds.join(",");
+
+  // DEBUGGING: Log the IDs we are attempting to fetch to the browser console
+  console.log(
+    `[Search Debug] Fetching prices for Enchantment [${enchantment}]:`,
+    joinedIds
+  );
+
+  const {
+    data: batchPriceData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["batch_preview", joinedIds, selectedCities, selectedQualities],
+    queryFn: () => getItemPrices(joinedIds, selectedCities, selectedQualities),
+    staleTime: 60000,
+    enabled: targetIds.length > 0,
+    retry: 1, // Minimize retries to avoid exacerbating rate limits
+  });
+
   return (
     <div className="space-y-6">
       {/* Search Result Banner */}
@@ -39,29 +78,65 @@ export default function SearchResultsList({
 
       {/* Grid of Match Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {items.map((item) => (
-          <ItemCard key={item.UniqueName} item={item} />
-        ))}
+        {items.map((item) => {
+          // Same logic as batch: Default (0) -> As Is. Specific -> Override.
+          const targetId =
+            enchantment && enchantment !== "0"
+              ? withEnchant(item.UniqueName, enchantment)
+              : item.UniqueName;
+
+          // Filter out only the prices relevant to this specific item
+          const itemPrices =
+            batchPriceData?.filter((p) => p.item_id === targetId) || [];
+
+          return (
+            <ItemCard
+              key={item.UniqueName}
+              item={item}
+              targetId={targetId}
+              priceData={itemPrices}
+              isLoading={isLoading}
+              isError={isError}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function ItemCard({ item }: { item: AlbionItem }) {
-  // Fetch quick price preview for this item (Normal quality, all cities)
-  const { data: priceData } = useQuery({
-    queryKey: ["preview", item.UniqueName],
-    queryFn: () => getItemPrices(item.UniqueName, [], [1]),
-    staleTime: 60000,
-  });
+interface ItemCardProps {
+  item: AlbionItem;
+  targetId: string;
+  priceData: AlbionPrice[];
+  isLoading: boolean;
+  isError: boolean;
+}
+
+function ItemCard({
+  item,
+  targetId,
+  priceData,
+  isLoading,
+  isError,
+}: ItemCardProps) {
+  // Function to create href for the specific item variant
+  const itemHref = `/search?q=${encodeURIComponent(targetId)}`;
 
   // Find the lowest sell price across all cities
-  const lowestPrice = priceData?.reduce((min, p) => {
-    if (p.sell_price_min > 0 && (min === 0 || p.sell_price_min < min)) {
-      return p.sell_price_min;
+  // Find the price entry with the lowest sell price across all cities
+  const bestPrice = priceData?.reduce((best, p) => {
+    if (
+      p.sell_price_min > 0 &&
+      (!best || p.sell_price_min < best.sell_price_min)
+    ) {
+      return p;
     }
-    return min;
-  }, 0);
+    return best;
+  }, null as AlbionPrice | null);
+
+  const lowestPrice = bestPrice?.sell_price_min;
+  const lowestPriceCity = bestPrice?.city;
 
   const latestUpdate = priceData?.find(
     (p) => p.sell_price_min > 0
@@ -69,7 +144,7 @@ function ItemCard({ item }: { item: AlbionItem }) {
 
   return (
     <Link
-      href={`/search?q=${encodeURIComponent(item.UniqueName)}`}
+      href={itemHref}
       className="glass-card text-left p-4 transition-all flex flex-col gap-3 group border-black/5 dark:border-white/5 hover:bg-primary/5"
     >
       <div className="flex items-center gap-4">
@@ -105,13 +180,28 @@ function ItemCard({ item }: { item: AlbionItem }) {
               Lowest Sell
             </span>
             <span className="text-sm font-black text-foreground">
-              {lowestPrice ? (
+              {isLoading ? (
+                <span className="opacity-30">Loading...</span>
+              ) : isError ? (
+                <span className="text-[9px] font-bold text-red-400">
+                  API Limit
+                </span>
+              ) : lowestPrice ? (
                 <>
                   {lowestPrice.toLocaleString()}
                   <span className="text-[10px] ml-1 opacity-40">Silver</span>
+                  {lowestPriceCity && (
+                    <span
+                      className={`block text-[10px] font-bold mt-0.5 ${
+                        getCityStyle(lowestPriceCity).text
+                      }`}
+                    >
+                      {lowestPriceCity}
+                    </span>
+                  )}
                 </>
               ) : (
-                <span className="opacity-30">Loading...</span>
+                <span className="opacity-30 text-xs">No Data</span>
               )}
             </span>
           </div>

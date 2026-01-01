@@ -2,6 +2,8 @@
 
 import React from "react";
 import { AlbionPrice, ALBION_QUALITIES } from "@/lib/prices";
+import { getCityStyle } from "@/lib/city-utils";
+import { getQualityStyle } from "@/lib/quality-utils";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -46,6 +48,8 @@ export default function PriceTable({ prices, isLoading }: PriceTableProps) {
         const qualityData = ALBION_QUALITIES.find(
           (q) => q.id === price.quality
         );
+        const cityStyle = getCityStyle(price.city);
+        const qualityStyle = getQualityStyle(price.quality);
 
         return (
           <motion.div
@@ -53,17 +57,26 @@ export default function PriceTable({ prices, isLoading }: PriceTableProps) {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.03 }}
-            className={`glass-card flex flex-col p-4 relative group border-black/5 dark:border-white/5 transition-all hover:bg-white/95 dark:hover:bg-black/60 shadow-sm hover:shadow-xl ${
-              !hasPrice ? "opacity-50 grayscale" : ""
+            className={`glass-card flex flex-col p-4 relative group transition-all hover:bg-white/95 dark:hover:bg-black/60 shadow-sm hover:shadow-xl ${
+              !hasPrice
+                ? "opacity-50 grayscale border-black/5 dark:border-white/5"
+                : `border-l-4 ${cityStyle.border}`
             }`}
+            style={hasPrice ? { borderLeftColor: "currentColor" } : {}}
           >
-            <div className="flex flex-col h-full gap-4">
+            <div
+              className={`flex flex-col h-full gap-4 ${
+                hasPrice ? cityStyle.text : ""
+              }`}
+            >
               {/* Card Header: City, Icon & Verification Status */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center border border-black/5 dark:border-white/10 ${
-                      hasPrice ? "bg-primary/5" : "bg-muted"
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${
+                      hasPrice
+                        ? `${cityStyle.bg} ${cityStyle.border}`
+                        : "bg-muted border-black/5 dark:border-white/10"
                     }`}
                   >
                     <img
@@ -73,11 +86,23 @@ export default function PriceTable({ prices, isLoading }: PriceTableProps) {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-black tracking-tight leading-none uppercase flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <h3
+                      className={`text-base font-black tracking-tight leading-none uppercase flex items-center gap-1.5 truncate ${
+                        hasPrice ? cityStyle.text : "text-card-foreground"
+                      }`}
+                    >
+                      <MapPin
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          hasPrice ? cityStyle.iconColor : ""
+                        }`}
+                      />
                       <span className="truncate">{price.city}</span>
                     </h3>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground mt-1 truncate">
+                    <p
+                      className={`text-[10px] font-bold uppercase tracking-[0.15em] mt-1 truncate ${
+                        hasPrice ? qualityStyle.text : "text-muted-foreground"
+                      }`}
+                    >
                       {qualityData?.name || "Normal"}
                     </p>
                   </div>

@@ -23,26 +23,30 @@ export async function getItemPrices(
   const targetLocations =
     locations && locations.length > 0 ? locations : ALBION_CITIES;
 
-  const locs = targetLocations.join(",");
+  const locs = targetLocations.map((l) => encodeURIComponent(l)).join(",");
   const quals =
     qualities && qualities.length > 0 ? qualities.join(",") : "1,2,3,4,5";
 
-  try {
-    const res = await fetch(
-      `https://www.albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${locs}&qualities=${quals}`,
-      {
-        next: { revalidate: 60 }, // Cache on server for 60 seconds
-      }
+  // We do NOT encodeURIComponent(itemId) here because if it's a batch request
+  // (comma-separated list), encoding the commas would break the API batch parsing.
+  // The caller is responsible for ensuring individual IDs are valid or encoded if needed
+  // (though Albion IDs generally use chars that are safe except @, which this API handles raw).
+  const res = await fetch(
+    `https://www.albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${locs}&qualities=${quals}`,
+    {
+      next: { revalidate: 60 },
+    }
+  );
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(
+      `Failed to fetch prices. Status: ${res.status} ${res.statusText}. Body: ${errorText}`
     );
-
-    if (!res.ok) throw new Error("Failed to fetch prices from Albion Data API");
-
-    const data = await res.json();
-    return data as AlbionPrice[];
-  } catch (error) {
-    console.error(`[API Error] Failed to fetch prices for ${itemId}:`, error);
-    return [];
   }
+
+  const data = await res.json();
+  return data as AlbionPrice[];
 }
 
 /**

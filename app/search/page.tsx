@@ -24,7 +24,7 @@ import FilterSidebar from "@/components/search/FilterSidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 
-const TIERS = ["1", "2", "3", "4", "5", "6", "7", "8"];
+const TIERS = ["All", "1", "2", "3", "4", "5", "6", "7", "8"];
 const ENCHANTMENTS = ["0", "1", "2", "3", "4"];
 
 /**
@@ -39,7 +39,15 @@ const ENCHANTMENTS = ["0", "1", "2", "3", "4"];
 
 function SearchContent() {
   const searchParams = useSearchParams();
-  const rawQuery = searchParams.get("q") || "";
+  // Ensure we fully decode the query, especially for characters like @ encoded as %40
+  const rawQuery = useMemo(() => {
+    const q = searchParams.get("q") || "";
+    try {
+      return decodeURIComponent(q);
+    } catch {
+      return q;
+    }
+  }, [searchParams]);
 
   // UI STATE
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
@@ -52,12 +60,12 @@ function SearchContent() {
   // VIEW STATE: "prices" (Direct match) or "list" (Search suggestions)
   const [view, setView] = useState<"prices" | "list">("prices");
   const [itemMatches, setItemMatches] = useState<AlbionItem[]>([]);
-  const [listLoading, setListLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(!!rawQuery);
 
   // LOGICAL STATE (Selected Item details)
   const [baseId, setBaseId] = useState("");
   const [itemName, setItemName] = useState("");
-  const [tier, setTier] = useState("4");
+  const [tier, setTier] = useState("All");
   const [enchantment, setEnchantment] = useState("0");
 
   /**
@@ -71,7 +79,7 @@ function SearchContent() {
       setListLoading(true);
 
       // Reset all filters when starting a new search
-      setTier("4");
+      setTier("All");
       setEnchantment("0");
       setSelectedCities([]);
       setSelectedQualities([]);
@@ -89,8 +97,22 @@ function SearchContent() {
         }
 
         // EXACT MATCH DETECTION (User clicked a specific item)
+        // EXACT MATCH DETECTION (User clicked a specific item)
+        // We must handle cases where rawQuery includes enchantment (e.g. T4_AXE@2)
+        // while the result item is base (T4_AXE).
+        const queryParts = parseAlbionId(rawQuery);
+
+        // Construct the "base" unique name (T + Tier + Base) without enchantment for comparison
+        // e.g. T4_AXE@2 -> T4_AXE
+        const queryBaseId =
+          queryParts.tier !== "0"
+            ? `T${queryParts.tier}_${queryParts.base}`
+            : queryParts.base;
+
         const exactMatch = results.find(
-          (i) => i.UniqueName.toUpperCase() === rawQuery.toUpperCase()
+          (i) =>
+            i.UniqueName.toUpperCase() === rawQuery.toUpperCase() ||
+            i.UniqueName.toUpperCase() === queryBaseId.toUpperCase()
         );
 
         if (exactMatch) {
@@ -103,11 +125,23 @@ function SearchContent() {
           const {
             base,
             tier: t,
-            enchant: e,
+            enchant: itemEnchant,
           } = parseAlbionId(exactMatch.UniqueName);
 
-          setTier(t === "0" ? "1" : t);
-          setEnchantment(e);
+          // Use the actual tier from the item, or keep "All" if it's generic
+          // If t is "0" (no tier), we leave it as "All" or "1" depending on item type?
+          // Actually, let's trust the parsed tier if it exists (1-8), otherwise "All".
+          setTier(t !== "0" ? t : "All");
+
+          // CRITICAL FIX: If the query URL specified an enchantment (e.g. @2),
+          // we must honor it over the base item's default (which is usually 0).
+          // If queryEnchant is "0" or empty, we fallback to itemEnchant.
+          const finalEnchant =
+            queryParts.enchant && queryParts.enchant !== "0"
+              ? queryParts.enchant
+              : itemEnchant;
+
+          setEnchantment(finalEnchant);
           setBaseId(base);
         } else if (results.length > 0) {
           // MULTIPLE MATCHES (User typed a generic word like "Bag")
@@ -131,10 +165,33 @@ function SearchContent() {
 
   // DERIVED STATE: Construct the full Albion Item ID (e.g., T4_BAG@1)
   const finalItemId = useMemo(() => {
+    // If "All" tier is selected, we do NOT force "4". We use the base ID.
+    // Use the selected tier, or undefined if "All".
+    const activeTier = tier === "All" ? undefined : tier;
+
     // Re-attach Tier prefix if missing from baseId
+    // If activeTier is present, force it.
+    // If activeTier is undefined (All), we use the baseId as is (which might be just "BAG" or "T4_BAG" depending on how it was set).
+    // Note: baseId from parseAlbionId usually strips the Tier prefix (e.g. "BAG").
+    // So "BAG" sent to API might fail.
+    // However, if the user wants "All", they usually want the LIST view.
+    // But if we are in Price View, we need a valid ID.
+    // For now, let's stick to the user's request: "user choose".
+    // If they choose "All", we try to fetch without T prefix (or default T4 if strictly needed?).
+    // Actually, let's default to "4" only if we REALLY have to, but let's try not to hardcode it in the logic flow.
+    // For now, let's just use "4" as a fallback ONLY if we are building a brand new ID, but if tier is "All", maybe we default to "4" just for the Price Chart display to work?
+    // User complaint was "default is 4". This likely refers to the selection state.
+    // We already fixed selection state in previous step.
+    // So here, we just ensure that IF a specific tier is selected, used it.
+
+    // OLD LOGIC: const activeTier = tier === "All" ? "4" : tier;
+
+    // NEW LOGIC: Default to 4 only if we absolutely need a tier to make a valid ID
+    const effectiveTier = activeTier || "4";
+
     const idWithTier =
-      tier && tier !== "0" && !baseId.startsWith("T")
-        ? `T${tier}_${baseId}`
+      effectiveTier && effectiveTier !== "0" && !baseId.startsWith("T")
+        ? `T${effectiveTier}_${baseId}`
         : baseId;
     return withEnchant(idWithTier, enchantment);
   }, [baseId, tier, enchantment]);
@@ -231,6 +288,7 @@ function SearchContent() {
           isFilterOpen={isFilterOpen}
           tiers={TIERS}
           enchantments={ENCHANTMENTS}
+          hideEnchantAndQuality={view === "list" || listLoading}
         />
 
         {/* RESULTS AREA */}
@@ -260,14 +318,15 @@ function SearchContent() {
               >
                 {(() => {
                   // Check if we have items of the selected tier
-                  const hasSelectedTier = itemMatches.some(
-                    (item) => item.Tier === parseInt(tier)
-                  );
-
-                  // If no items match the current tier, show all items instead
-                  const filtered = hasSelectedTier
-                    ? itemMatches.filter((item) => item.Tier === parseInt(tier))
-                    : itemMatches;
+                  const filtered =
+                    tier === "All"
+                      ? itemMatches
+                      : itemMatches.filter((item) => {
+                          const itemTier =
+                            item.Tier ||
+                            parseInt(parseAlbionId(item.UniqueName).tier);
+                          return itemTier === parseInt(tier);
+                        });
 
                   if (filtered.length === 0) {
                     return (
@@ -275,16 +334,24 @@ function SearchContent() {
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
                           <Filter className="w-8 h-8 text-muted-foreground opacity-50" />
                         </div>
-                        <h3 className="text-xl font-bold">No items found</h3>
+                        <h3 className="text-xl font-bold">
+                          No {tier === "All" ? "" : `Tier ${tier}`} items found
+                        </h3>
                         <p className="text-muted-foreground max-w-sm mx-auto">
-                          Try a different search term.
+                          Try adjusting the tier filter or search term.
                         </p>
                       </div>
                     );
                   }
 
                   return (
-                    <SearchResultsList items={filtered} query={rawQuery} />
+                    <SearchResultsList
+                      items={filtered}
+                      query={rawQuery}
+                      selectedCities={selectedCities}
+                      selectedQualities={selectedQualities}
+                      enchantment={enchantment}
+                    />
                   );
                 })()}
               </motion.div>
