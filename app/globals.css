@@ -1,0 +1,137 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
+}
+
+:root {
+  --background: oklch(0.99 0.01 240);
+  --foreground: oklch(0.15 0.02 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.02 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.02 240);
+  --primary: oklch(0.55 0.22 260);
+  --primary-foreground: oklch(0.99 0.01 240);
+  --secondary: oklch(0.92 0.03 240);
+  --secondary-foreground: oklch(0.15 0.02 240);
+  --muted: oklch(0.96 0.01 240);
+  --muted-foreground: oklch(0.45 0.02 240);
+  --accent: oklch(0.94 0.04 260);
+  --accent-foreground: oklch(0.55 0.22 260);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.99 0.01 240);
+  --border: oklch(0.9 0.02 240);
+  --input: oklch(0.9 0.02 240);
+  --ring: oklch(0.55 0.22 260);
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: oklch(16.503% 0.04691 256.307);
+  --foreground: oklch(0.98 0.01 240);
+  --card: oklch(0.12 0.02 240);
+  --card-foreground: oklch(0.98 0.01 240);
+  --popover: oklch(0.1 0.02 240);
+  --popover-foreground: oklch(0.98 0.01 240);
+  --primary: oklch(0.7 0.18 260);
+  --primary-foreground: oklch(0.08 0.02 240);
+  --secondary: oklch(0.18 0.03 240);
+  --secondary-foreground: oklch(0.98 0.01 240);
+  --muted: oklch(0.18 0.02 240);
+  --muted-foreground: oklch(0.65 0.02 240);
+  --accent: oklch(0.2 0.06 260);
+  --accent-foreground: oklch(0.7 0.18 260);
+  --destructive: oklch(0.5 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 240);
+  --border: oklch(0.2 0.03 240);
+  --input: oklch(0.2 0.03 240);
+  --ring: oklch(0.7 0.18 260);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50 p-0 m-0;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden text-sm sm:text-base min-h-screen;
+    /* Prevent layout shifts from Radix UI / Shadcn overlays */
+    margin-right: 0 !important;
+  }
+}
+
+@layer components {
+  /* Premium Glassmorphism - Balanced for all screens */
+  .glass {
+    @apply bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl;
+  }
+
+  .glass-card {
+    @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-md rounded-2xl p-4 sm:p-6 transition-all duration-500 hover:shadow-xl hover:border-primary/40 overflow-hidden;
+  }
+
+  .glass-input {
+    @apply bg-white/60 dark:bg-black/30 border border-white/50 dark:border-white/10 px-4 sm:px-6 py-2 sm:py-3 rounded-full focus:border-primary focus:ring-4 focus:ring-primary/20 backdrop-blur-xl transition-[border-color,background-color,box-shadow] duration-300 placeholder:text-muted-foreground/50 shadow-inner text-sm sm:text-base;
+  }
+
+  /* Animations */
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  /* Premium Gradient Text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-primary via-blue-500 to-indigo-600 font-bold;
+  }
+
+  .wrapper {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8 max-w-[1920px] relative;
+  }
+
+  /* Interactive Button Premium */
+  .btn-premium {
+    @apply bg-primary text-primary-foreground shadow-md shadow-primary/20 px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold uppercase tracking-wider text-[10px] sm:text-xs transition-all duration-300 hover:scale-105 hover:shadow-primary/40 active:scale-95 cursor-pointer;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-primary/10 text-foreground transition-all duration-300 px-4 py-2 rounded-full font-bold uppercase tracking-widest text-[10px];
+  }
+}
