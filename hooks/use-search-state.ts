@@ -12,12 +12,9 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { searchAlbionItems } from "@/lib/actions";
 import { getDBItem } from "@/lib/db";
-import {
-  searchItems,
-  parseAlbionId,
-  withEnchant,
-  AlbionItem,
-} from "@/lib/search";
+import { searchItems, parseAlbionId, withEnchant } from "@/lib/search";
+import type { AlbionItem } from "@/lib/types";
+
 import { getItemPrices, AlbionPrice, ALBION_CITIES } from "@/lib/prices";
 
 export function useSearchState() {
