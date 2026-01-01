@@ -1,4 +1,4 @@
-import { AlbionItem } from "./types";
+import type { AlbionItem } from "@/lib/types";
 
 /**
  * searchItems
