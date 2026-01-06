@@ -80,10 +80,31 @@ html {
     @apply border-border outline-ring/50 p-0 m-0;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden text-sm sm:text-base min-h-screen;
+    @apply bg-background/60 text-foreground font-sans antialiased overflow-x-hidden text-sm sm:text-base min-h-screen relative;
     /* Prevent layout shifts from Radix UI / Shadcn overlays */
     margin-right: 0 !important;
   }
+
+  /* Fixed Site Background Pattern (Repeating 4 times) */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("/back.svg");
+    background-size: 25% auto;
+    background-repeat: repeat;
+    /* This filter converts the SVG stroke to a bright vibrant Blue for Light Mode */
+    filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(190deg)
+      brightness(110%) contrast(110%);
+    opacity: 0.3;
+    z-index: -2;
+    pointer-events: none;
+  }
+}
+
+.dark body::after {
+  filter: none; /* Reset filter to show original Gold (#ffd700) from SVG */
+  opacity: 0.2;
 }
 
 @layer components {
