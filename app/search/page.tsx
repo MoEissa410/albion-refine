@@ -1,7 +1,8 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { SearchIcon, Filter, ChevronDown } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { parseAlbionId } from "@/lib/search";
 import { useSearchState } from "@/hooks/use-search-state";
@@ -40,6 +41,17 @@ function SearchContent() {
     pricesLoading,
     itemName,
   } = useSearchState();
+
+  const searchParams = useSearchParams();
+  const q = searchParams.get("q");
+
+  useEffect(() => {
+    if (q) {
+      document.title = `Search: ${q} | Bright 4ams`;
+    } else {
+      document.title = "Market Search | Bright 4ams";
+    }
+  }, [q]);
 
   return (
     <div className="wrapper py-6 min-h-screen">

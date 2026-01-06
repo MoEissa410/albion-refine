@@ -1,5 +1,12 @@
 import React from "react";
 import RefineCalculator from "@/components/refine/RefineCalculator";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Resource Refining Analyzer",
+  description:
+    "Calculate the most profitable material conversion with live Albion market data.",
+};
 
 export default function RefinePage() {
   return (

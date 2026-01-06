@@ -1,5 +1,12 @@
 import React from "react";
 import CraftCalculator from "@/components/craft/CraftCalculator";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Item Crafting Profit Engine",
+  description:
+    "Maximize your silver by analyzing material costs and item values in Albion Online.",
+};
 
 export default function CraftPage() {
   return (
