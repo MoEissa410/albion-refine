@@ -67,7 +67,7 @@ export function useSearchState() {
 
       try {
         // Step A: Check Local DB (IndexedDB) for instant offline-first results
-        const cachedItems = await getDBItem<AlbionItem[]>("items_list");
+        const cachedItems = await getDBItem<AlbionItem[]>("albion_items_data");
         let results: AlbionItem[] = [];
 
         if (cachedItems && cachedItems.length > 0) {
@@ -194,14 +194,7 @@ export function useSearchState() {
       if (sortBy.endsWith("low")) return pA - pB;
       return pB - pA;
     });
-  }, [
-    priceData,
-    pricesLoading,
-    sortBy,
-    selectedCities,
-    selectedQualities,
-    finalItemId,
-  ]);
+  }, [priceData, pricesLoading, sortBy, selectedCities, selectedQualities]);
 
   return {
     rawQuery,

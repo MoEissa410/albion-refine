@@ -5,6 +5,7 @@ export interface RefiningRecipe {
 }
 
 export const REFINING_RECIPES: Record<number, RefiningRecipe> = {
+  1: { tier: 1, rawAmount: 1, refinedPrevAmount: 0 },
   2: { tier: 2, rawAmount: 1, refinedPrevAmount: 0 },
   3: { tier: 3, rawAmount: 2, refinedPrevAmount: 1 },
   4: { tier: 4, rawAmount: 2, refinedPrevAmount: 1 },

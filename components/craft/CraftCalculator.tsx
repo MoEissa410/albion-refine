@@ -48,10 +48,10 @@ export default function CraftCalculator() {
           </div>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Materials Total</span>
-              <span className="font-mono">124,500</span>
-            </div>
-            <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Materials Total</span>
+                <span className="font-mono">124,500</span>
+              </div>
               <span className="text-muted-foreground">Station Fees</span>
               <span className="font-mono">12,000</span>
             </div>
@@ -88,7 +88,7 @@ export default function CraftCalculator() {
                     T{tier}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold">Adept's Bag</h4>
+                    <h4 className="font-bold">Adept&apos;s Bag</h4>
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-xs text-muted-foreground">
                         Est. Profit

@@ -35,7 +35,11 @@ export async function getAllItems(): Promise<AlbionItem[]> {
 
     if (!res.ok) throw new Error("Failed to fetch items from source");
 
-    const rawItems: any[] = await res.json();
+    const rawItems = (await res.json()) as {
+      UniqueName: string;
+      LocalizedNames?: Record<string, string>;
+      Tier?: number;
+    }[];
 
     /**
      * PROCESS & PURIFY

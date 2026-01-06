@@ -27,25 +27,25 @@
 }
 
 :root {
-  --background: oklch(0.99 0.01 240);
+  --background: oklch(0.95 0.01 240);
   --foreground: oklch(0.15 0.02 240);
-  --card: oklch(1 0 0);
+  --card: oklch(0.97 0.01 240);
   --card-foreground: oklch(0.15 0.02 240);
-  --popover: oklch(1 0 0);
+  --popover: oklch(0.97 0.01 240);
   --popover-foreground: oklch(0.15 0.02 240);
-  --primary: oklch(0.55 0.22 260);
-  --primary-foreground: oklch(0.99 0.01 240);
-  --secondary: oklch(0.92 0.03 240);
+  --primary: oklch(0.5 0.22 260);
+  --primary-foreground: oklch(0.98 0.01 240);
+  --secondary: oklch(0.9 0.03 240);
   --secondary-foreground: oklch(0.15 0.02 240);
-  --muted: oklch(0.96 0.01 240);
-  --muted-foreground: oklch(0.45 0.02 240);
-  --accent: oklch(0.94 0.04 260);
-  --accent-foreground: oklch(0.55 0.22 260);
+  --muted: oklch(0.92 0.01 240);
+  --muted-foreground: oklch(0.4 0.02 240);
+  --accent: oklch(0.92 0.04 260);
+  --accent-foreground: oklch(0.5 0.22 260);
   --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: oklch(0.99 0.01 240);
-  --border: oklch(0.9 0.02 240);
-  --input: oklch(0.9 0.02 240);
-  --ring: oklch(0.55 0.22 260);
+  --destructive-foreground: oklch(0.98 0.01 240);
+  --border: oklch(0.85 0.02 240);
+  --input: oklch(0.85 0.02 240);
+  --ring: oklch(0.5 0.22 260);
   --radius: 0.75rem;
 }
 
@@ -89,15 +89,15 @@ html {
 @layer components {
   /* Premium Glassmorphism - Balanced for all screens */
   .glass {
-    @apply bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-xl;
+    @apply bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
   }
 
   .glass-card {
-    @apply bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-md rounded-2xl p-4 sm:p-6 transition-all duration-500 hover:shadow-xl hover:border-primary/40 overflow-hidden;
+    @apply bg-white/30 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-md rounded-2xl p-4 sm:p-6 transition-all duration-500 hover:shadow-xl hover:border-primary/40 overflow-hidden;
   }
 
   .glass-input {
-    @apply bg-white/60 dark:bg-black/30 border border-white/50 dark:border-white/10 px-4 sm:px-6 py-2 sm:py-3 rounded-full focus:border-primary focus:ring-4 focus:ring-primary/20 backdrop-blur-xl transition-[border-color,background-color,box-shadow] duration-300 placeholder:text-muted-foreground/50 shadow-inner text-sm sm:text-base;
+    @apply bg-white/20 dark:bg-black/30 border border-white/20 dark:border-white/10 px-4 sm:px-6 py-2 sm:py-3 rounded-full focus:border-primary focus:ring-4 focus:ring-primary/20 backdrop-blur-xl transition-[border-color,background-color,box-shadow] duration-300 placeholder:text-muted-foreground/50 shadow-inner text-sm sm:text-base;
   }
 
   /* Animations */
@@ -113,8 +113,24 @@ html {
     }
   }
 
+  @keyframes progress-loading {
+    0% {
+      transform: translateX(-100%);
+    }
+    50% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
   .animate-float {
     animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-progress-loading {
+    animation: progress-loading 2s ease-in-out infinite;
   }
 
   /* Premium Gradient Text */

@@ -9,7 +9,7 @@ export async function GET() {
         "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=43200",
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch items" },
       { status: 500 }

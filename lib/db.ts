@@ -39,7 +39,7 @@ export async function openDB(): Promise<IDBDatabase> {
  * Saves an item (key-value) to the IndexedDB store.
  * Best Practice: Use this for large objects data that doesn't change frequently.
  */
-export async function setDBItem(key: string, value: any): Promise<void> {
+export async function setDBItem(key: string, value: unknown): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");

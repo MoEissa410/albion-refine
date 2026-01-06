@@ -181,8 +181,8 @@ function SearchContent() {
                       No market signals found
                     </h3>
                     <p className="text-muted-foreground max-w-sm mx-auto">
-                      We couldn't find any recent price data for this item. Try
-                      refreshing or selecting different cities.
+                      We couldn&apos;t find any recent price data for this item.
+                      Try refreshing or selecting different cities.
                     </p>
                   </div>
                 )}
