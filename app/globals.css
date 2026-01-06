@@ -85,13 +85,13 @@ html {
     margin-right: 0 !important;
   }
 
-  /* Fixed Site Background Pattern (Repeating 4 times) */
+  /* Fixed Site Background Pattern (Smaller - Repeats ~6.5 times) */
   body::after {
     content: "";
     position: fixed;
     inset: 0;
     background-image: url("/back.svg");
-    background-size: 25% auto;
+    background-size: 15% auto;
     background-repeat: repeat;
     /* This filter converts the SVG stroke to a bright vibrant Blue for Light Mode */
     filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(190deg)

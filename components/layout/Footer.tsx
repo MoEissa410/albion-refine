@@ -26,7 +26,7 @@ export default function Footer() {
 
         <div className="flex gap-6">
           <a
-            href="https://github.com"
+            href="https://github.com/MoEissa410"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-primary transition-colors"
@@ -45,7 +45,7 @@ export default function Footer() {
 
         <div className="text-xs text-muted-foreground">
           © {new Date().getFullYear()} Bright ass 4ams. this site creat by
-          Mostaf Eissa.
+          Mostafa Eissa.
         </div>
       </div>
     </footer>
