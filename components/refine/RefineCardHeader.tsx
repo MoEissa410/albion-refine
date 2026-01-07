@@ -14,6 +14,8 @@ interface RefineCardHeaderProps {
   refinedItemId: string;
   resStyle: ResourceStyle;
   metrics: CardMetrics;
+  buyCity: string;
+  sellCity: string;
 }
 
 export function RefineCardHeader({
@@ -23,6 +25,8 @@ export function RefineCardHeader({
   refinedItemId,
   resStyle,
   metrics,
+  buyCity,
+  sellCity,
 }: RefineCardHeaderProps) {
   return (
     <div className="flex items-start justify-between">
@@ -33,17 +37,17 @@ export function RefineCardHeader({
           />
           <TierIcon
             itemId={refinedItemId}
-            className="relative w-16 h-16 rounded-2xl shadow-lg border-2 border-white/10"
+            className="relative w-12 h-12 rounded-xl shadow-lg border-2 border-white/10"
             autoAnimate
           />
         </div>
         <div className="space-y-0.5">
           <p
-            className={`text-[10px] uppercase font-black tracking-[0.2em] ${resStyle.text}`}
+            className={`text-[8px] uppercase font-black tracking-[0.2em] ${resStyle.text}`}
           >
-            {getRefineDisplayName(resourceType, "refined")} Refining
+            {getRefineDisplayName(resourceType, "refined")}
           </p>
-          <h3 className="text-2xl font-black tracking-tighter">
+          <h3 className="text-xl font-black tracking-tighter">
             T{tier}
             {enchant > 0 ? `.${enchant}` : ""}
           </h3>
@@ -66,7 +70,7 @@ export function RefineCardHeader({
         ) : (
           <>
             <p
-              className={`text-2xl font-black tracking-tight ${
+              className={`text-xl font-black tracking-tight ${
                 metrics.totalProfit >= 0
                   ? "text-green-500"
                   : "text-red-500 drop-shadow-sm text-red-400"
@@ -74,9 +78,11 @@ export function RefineCardHeader({
             >
               {formatMoney(metrics.totalProfit)}
             </p>
-            <p className="text-[10px] font-bold text-muted-foreground/80 lowercase italic">
-              {formatMoney(metrics.profitPerUnit)} / unit
-            </p>
+            <div className="flex flex-col gap-0.5 mt-0.5">
+              <span className="text-[9px] font-bold text-muted-foreground/80 italic">
+                {formatMoney(metrics.profitPerUnit)} / unit
+              </span>
+            </div>
           </>
         )}
       </div>

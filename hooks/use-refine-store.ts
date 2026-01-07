@@ -3,7 +3,6 @@ import { REFINING_RECIPES } from "@/lib/formulas";
 import { ALBION_CITIES } from "@/lib/prices";
 
 export type ResourceType = "WOOD" | "ORE" | "FIBER" | "HIDE" | "STONE";
-
 export type TierKey = `${number}.${number}`;
 
 export interface TierPrice {
@@ -19,26 +18,24 @@ export interface CardMetrics {
   costPerUnit: number;
   buyPrice: number;
   sellPrice: number;
-  isReliable: boolean; // True if we have all necessary price inputs
-  hasMarketPrices: {
-    buy: boolean;
-    sell: boolean;
-  };
+  intermediatePrice: number;
+  intermediateKey: TierKey | null;
+  isReliable: boolean;
+  hasMarketPrices: { buy: boolean; sell: boolean };
 }
 
 export const TIER_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 export const ENCHANT_LEVELS = [0, 1, 2, 3, 4] as const;
-
 export const buildTierKey = (tier: number, enchant: number): TierKey =>
   `${tier}.${enchant}`;
 
 const createEmptyPrices = (): Record<TierKey, TierPrice> => {
   const next: Record<TierKey, TierPrice> = {} as Record<TierKey, TierPrice>;
-  TIER_LEVELS.forEach((tier) => {
+  TIER_LEVELS.forEach((tier) =>
     ENCHANT_LEVELS.forEach((enchant) => {
       next[buildTierKey(tier, enchant)] = { buy: 0, sell: 0 };
-    });
-  });
+    })
+  );
   return next;
 };
 
@@ -53,7 +50,7 @@ interface RefineState {
   sellOrderCity: string;
   quantity: number;
   prices: Record<TierKey, TierPrice>;
-  marketPrices: Record<TierKey, TierPrice>; // Original prices for reference
+  marketPrices: Record<TierKey, TierPrice>;
   priceTimestamps: Record<TierKey, { buy?: string; sell?: string }>;
   hydratePrices: (input: PricePayload) => void;
   setResourceType: (v: ResourceType) => void;
@@ -66,10 +63,11 @@ interface RefineState {
   updatePrice: (key: TierKey, field: "buy" | "sell", value: number) => void;
 }
 
+// ================= STORE =================
 export const useRefineStore = create<RefineState>((set) => ({
   resourceType: "WOOD",
   returnRate: 36.7,
-  taxRate: 13,
+  taxRate: 6.5,
   shopFee: 500,
   buyOrderCity: ALBION_CITIES[0],
   sellOrderCity: ALBION_CITIES[1] ?? ALBION_CITIES[0],
@@ -82,34 +80,23 @@ export const useRefineStore = create<RefineState>((set) => ({
       const nextPrices = { ...state.prices };
       const nextMarketPrices = { ...state.marketPrices };
       const nextTimestamps = { ...state.priceTimestamps };
-
       Object.entries(input).forEach(([key, value]) => {
         if (!value) return;
-        const castKey = key as TierKey;
-
-        // Update editable prices
-        nextPrices[castKey] = {
-          buy: value.buy ?? nextPrices[castKey].buy,
-          sell: value.sell ?? nextPrices[castKey].sell,
+        const k = key as TierKey;
+        nextPrices[k] = {
+          buy: value.buy ?? nextPrices[k].buy,
+          sell: value.sell ?? nextPrices[k].sell,
         };
-
-        // Also update market prices for reference (don't change after first load unless we fetch again)
-        nextMarketPrices[castKey] = {
-          buy: value.buy ?? nextMarketPrices[castKey].buy,
-          sell: value.sell ?? nextMarketPrices[castKey].sell,
+        nextMarketPrices[k] = {
+          buy: value.buy ?? nextMarketPrices[k].buy,
+          sell: value.sell ?? nextMarketPrices[k].sell,
         };
-
-        // Store timestamps
         const v = value as Partial<TierPrice> & {
           buyTimestamp?: string;
           sellTimestamp?: string;
         };
-        if (v.buyTimestamp || v.sellTimestamp) {
-          nextTimestamps[castKey] = {
-            buy: v.buyTimestamp,
-            sell: v.sellTimestamp,
-          };
-        }
+        if (v.buyTimestamp || v.sellTimestamp)
+          nextTimestamps[k] = { buy: v.buyTimestamp, sell: v.sellTimestamp };
       });
       return {
         prices: nextPrices,
@@ -133,12 +120,10 @@ export const useRefineStore = create<RefineState>((set) => ({
     })),
 }));
 
+// ================= UTILITIES =================
 const clampRate = (rate: number) => Math.min(Math.max(rate, 0), 100);
-
 const getRecipe = (tier: number) =>
   REFINING_RECIPES[tier] ?? { tier, rawAmount: 1, refinedPrevAmount: 0 };
-
-// Nutrition values per tier in Albion Online
 const TIER_NUTRITION: Record<number, number> = {
   1: 0,
   2: 0,
@@ -150,129 +135,78 @@ const TIER_NUTRITION: Record<number, number> = {
   8: 1792,
 };
 
-// Internal cache for memoizing metrics calculation
+// ================= CALCULATION =================
 let lastState: any = null;
 let lastMetrics: Record<TierKey, CardMetrics> | null = null;
 
-/**
- * CHAINED CALCULATION ENGINE
- * Computes metrics with tier-to-tier dependencies.
- * Memoized to ensure referential stability and performance.
- */
 export const selectAllMetrics = (
   state: RefineState
 ): Record<TierKey, CardMetrics> => {
-  // Return cached result if state hasn't changed
-  if (state === lastState && lastMetrics) {
-    return lastMetrics;
-  }
-
+  if (state === lastState && lastMetrics) return lastMetrics;
   const metrics: Record<string, CardMetrics> = {};
-
   const tiers = [2, 3, 4, 5, 6, 7, 8];
   const enchantments = [0, 1, 2, 3, 4];
-
   const rr = clampRate(state.returnRate) / 100;
   const tax = clampRate(state.taxRate) / 100;
 
-  // Real yield per craft attempt
-  const unitsProducedPerCraft = 1 / Math.max(0.0001, 1 - rr);
-
   tiers.forEach((tier) => {
     enchantments.forEach((enchant) => {
-      // T2 and T3 only have flat (.0) versions
       if (tier < 4 && enchant > 0) return;
-
       const key = buildTierKey(tier, enchant);
       const recipe = getRecipe(tier);
+      const sellPrice = state.prices[key]?.sell || 0;
+      const rawPrice = state.prices[key]?.buy || 0;
 
-      const rawPriceInput = state.prices[key]?.buy || 0;
-      const sellPriceInput = state.prices[key]?.sell || 0;
-
-      // DEPENDENCY LOGIC:
-      // If we need previous tier refined (refinedPrevAmount > 0),
-      // we prefer the market price of the previous tier's FLAT version if available.
-      // Fallback: use the production cost of the previous tier.
-      let prevRefinedInput = 0;
-      let isIngredientReliable = true;
-
+      let prevRefPrice = 0;
+      let prevReliable = true;
+      let prevKey: TierKey | null = null;
       if (recipe.refinedPrevAmount > 0) {
-        // Enchantment carries over for previous tier ingredient (T4+),
-        // except for T2/T3 which only have flat versions.
         const prevEnchant = tier - 1 < 4 ? 0 : enchant;
-        const prevKey = buildTierKey(tier - 1, prevEnchant);
-
-        const prevMarketPrice = state.prices[prevKey]?.sell || 0;
-        const prevProdCost = metrics[prevKey]?.costPerUnit || 0;
-
-        // Best Strategy: Use market price if it exists, otherwise use production cost
-        if (prevMarketPrice > 0) {
-          prevRefinedInput = prevMarketPrice;
-          // isIngredientReliable remains true if market price is available
-        } else if (prevProdCost > 0) {
-          prevRefinedInput = prevProdCost;
-          // If we have to estimate the cost, it's no longer 'reliable' in terms of market data
-          isIngredientReliable = false;
-        } else {
-          // The chain is broken
-          isIngredientReliable = false;
-        }
+        prevKey = buildTierKey(tier - 1, prevEnchant);
+        prevRefPrice = state.prices[prevKey]?.sell || 0;
+        if (prevRefPrice === 0) prevReliable = false;
       }
 
-      // 1. Calculate ingredient costs
-      const materialCost =
-        recipe.rawAmount * rawPriceInput +
-        recipe.refinedPrevAmount * prevRefinedInput;
+      const grossRawCost = recipe.rawAmount * rawPrice;
+      const grossIntermediateCost = recipe.refinedPrevAmount * prevRefPrice;
+      const totalGrossCost = grossRawCost + grossIntermediateCost;
+      const effectiveMaterialCost = totalGrossCost * (1 - rr);
 
-      // 2. Add Shop Fee (Usage Fee)
+      const salesTax = sellPrice * tax;
       const nutrition = TIER_NUTRITION[tier] || 0;
-      const shopFeePerCraft = (state.shopFee / 100) * nutrition;
-
-      // 3. Resulting cost per single refined unit
-      const costPerUnit = materialCost * (1 - rr) + shopFeePerCraft;
-
-      // 4. Reliability Tracking
-      // Profit is reliable only if:
-      // - We have the CURRENT tier's raw material price
-      // - We have the CURRENT tier's output sell price
-      // - The previous tier's refined component is reliable
-      const isReliable =
-        rawPriceInput > 0 && sellPriceInput > 0 && isIngredientReliable;
-
-      // 5. Profit calculation
-      const netSellPrice = sellPriceInput * (1 - tax);
-      const profitPerUnit = netSellPrice - costPerUnit;
-      const totalProfit = profitPerUnit * state.quantity;
+      const usageFee = (nutrition * state.shopFee) / 20000;
+      const profitPerUnit =
+        sellPrice - salesTax - effectiveMaterialCost - usageFee;
+      const costPerUnit = effectiveMaterialCost + salesTax + usageFee;
 
       metrics[key] = {
         tier,
         enchant,
         profitPerUnit,
-        totalProfit,
+        totalProfit: profitPerUnit * state.quantity,
         costPerUnit: Math.max(0, costPerUnit),
-        buyPrice: rawPriceInput,
-        sellPrice: sellPriceInput,
-        isReliable,
+        buyPrice: rawPrice,
+        sellPrice,
+        intermediatePrice: prevRefPrice,
+        intermediateKey: prevKey,
+        isReliable: rawPrice > 0 && sellPrice > 0 && prevReliable,
         hasMarketPrices: {
-          buy: rawPriceInput > 0,
-          sell: sellPriceInput > 0,
+          buy: rawPrice > 0,
+          sell: sellPrice > 0,
         },
       };
     });
   });
 
-  // Update cache
   lastState = state;
   lastMetrics = metrics as Record<TierKey, CardMetrics>;
-
   return lastMetrics;
 };
 
-// Stable empty card for fallbacks
+// ================= EMPTY CARD FALLBACK =================
 const EMPTY_CARD_CACHE: Record<string, CardMetrics> = {};
-
 const getEmptyCard = (tier: number, enchant: number): CardMetrics => {
-  const key = `${tier}.${enchant}`;
+  const key = buildTierKey(tier, enchant);
   if (!EMPTY_CARD_CACHE[key]) {
     EMPTY_CARD_CACHE[key] = {
       tier,
@@ -282,11 +216,10 @@ const getEmptyCard = (tier: number, enchant: number): CardMetrics => {
       costPerUnit: 0,
       buyPrice: 0,
       sellPrice: 0,
+      intermediatePrice: 0,
+      intermediateKey: null,
       isReliable: false,
-      hasMarketPrices: {
-        buy: false,
-        sell: false,
-      },
+      hasMarketPrices: { buy: false, sell: false },
     };
   }
   return EMPTY_CARD_CACHE[key];

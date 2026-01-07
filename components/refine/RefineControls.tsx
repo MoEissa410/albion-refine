@@ -132,9 +132,16 @@ export function RefineControls() {
           Shop Fee / 100
         </Label>
         <Input
-          type="number"
-          value={shopFee}
-          onChange={(e) => setShopFee(Number(e.target.value) || 0)}
+          type="text"
+          inputMode="numeric"
+          value={shopFee === 0 ? "" : shopFee}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, "");
+            setShopFee(Number(val) || 0);
+          }}
+          onFocus={(e) => e.target.select()}
+          onClick={(e) => (e.target as HTMLInputElement).select()}
+          placeholder="0"
           className="glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-extrabold text-lg focus-visible:ring-primary/30"
         />
       </div>
@@ -146,9 +153,20 @@ export function RefineControls() {
           Return Rate (%)
         </Label>
         <Input
-          type="number"
-          value={returnRate}
-          onChange={(e) => setReturnRate(Number(e.target.value) || 0)}
+          type="text"
+          inputMode="decimal"
+          value={returnRate === 0 ? "" : returnRate}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9.]/g, "");
+            if (val === "" || val === ".") {
+              setReturnRate(0);
+            } else {
+              setReturnRate(Number(val) || 0);
+            }
+          }}
+          onFocus={(e) => e.target.select()}
+          onClick={(e) => (e.target as HTMLInputElement).select()}
+          placeholder="0"
           className="glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-extrabold text-lg"
         />
       </div>
@@ -160,71 +178,79 @@ export function RefineControls() {
           Quantity
         </Label>
         <Input
-          type="number"
+          type="text"
+          inputMode="numeric"
           min={1}
-          value={quantity}
-          onChange={(e) =>
-            setQuantity(Math.max(1, Number(e.target.value) || 1))
-          }
+          value={quantity === 0 ? "" : quantity}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, "");
+            setQuantity(Number(val) || 0);
+          }}
+          onFocus={(e) => e.target.select()}
+          onClick={(e) => (e.target as HTMLInputElement).select()}
+          placeholder="1"
           className="glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-extrabold text-lg"
         />
       </div>
 
-      {/* 6. TRADING ROUTE (CITIES) */}
-      <div className="space-y-2.5 sm:col-span-2 lg:col-span-1 xl:col-span-1">
+      {/* 6. BUY CITY */}
+      <div className="space-y-2.5">
         <Label className="text-[11px] uppercase tracking-wider font-extrabold text-muted-foreground flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/40" />
-          Trading Route
+          Buy City
         </Label>
-        <div className="grid grid-cols-2 gap-2">
-          {/* BUY CITY */}
-          <Select value={buyOrderCity} onValueChange={setBuyOrderCity}>
-            <SelectTrigger
-              className={`glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-black text-xs px-2 ${
-                getCityStyle(buyOrderCity).text
-              }`}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-background/95 backdrop-blur-xl border-white/10 rounded-2xl p-1">
-              {ALBION_CITIES.map((city) => (
-                <SelectItem
-                  key={city}
-                  value={city}
-                  className={`rounded-xl font-bold py-2 ${
-                    getCityStyle(city).text
-                  }`}
-                >
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Select value={buyOrderCity} onValueChange={setBuyOrderCity}>
+          <SelectTrigger
+            className={`glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-black text-xs px-3 ${
+              getCityStyle(buyOrderCity).text
+            }`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-background/95 backdrop-blur-xl border-white/10 rounded-2xl p-1">
+            {ALBION_CITIES.map((city) => (
+              <SelectItem
+                key={city}
+                value={city}
+                className={`rounded-xl font-bold py-2 ${
+                  getCityStyle(city).text
+                }`}
+              >
+                {city}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-          {/* SELL CITY */}
-          <Select value={sellOrderCity} onValueChange={setSellOrderCity}>
-            <SelectTrigger
-              className={`glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-black text-xs px-2 ${
-                getCityStyle(sellOrderCity).text
-              }`}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-background/95 backdrop-blur-xl border-white/10 rounded-2xl p-1">
-              {ALBION_CITIES.map((city) => (
-                <SelectItem
-                  key={city}
-                  value={city}
-                  className={`rounded-xl font-bold py-2 ${
-                    getCityStyle(city).text
-                  }`}
-                >
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* 7. SELL CITY */}
+      <div className="space-y-2.5">
+        <Label className="text-[11px] uppercase tracking-wider font-extrabold text-muted-foreground flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-500/40" />
+          Sell City
+        </Label>
+        <Select value={sellOrderCity} onValueChange={setSellOrderCity}>
+          <SelectTrigger
+            className={`glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-black text-xs px-3 ${
+              getCityStyle(sellOrderCity).text
+            }`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-background/95 backdrop-blur-xl border-white/10 rounded-2xl p-1">
+            {ALBION_CITIES.map((city) => (
+              <SelectItem
+                key={city}
+                value={city}
+                className={`rounded-xl font-bold py-2 ${
+                  getCityStyle(city).text
+                }`}
+              >
+                {city}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

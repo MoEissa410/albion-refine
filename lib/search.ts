@@ -92,7 +92,7 @@ export function withEnchant(itemId: string, enchant?: number | string) {
     );
 
   if (isResource) {
-    return `${base}_LEVEL${e}@${e}`;
+    return `${base}_LEVEL${e}`;
   }
 
   return `${base}@${e}`;

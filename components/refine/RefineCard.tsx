@@ -63,10 +63,10 @@ export function RefineCard({
 
   return (
     <div
-      className="glass-card flex flex-col overflow-hidden rounded-[2rem] border-black/5 dark:border-white/5 shadow-xl hover:shadow-2xl hover:translate-y-[-4px] transition-all duration-300 group"
+      className="glass-card flex flex-col overflow-hidden rounded-[1.5rem] border-black/5 dark:border-white/5 shadow-lg group"
       translate="no"
     >
-      <div className="relative p-6 space-y-6">
+      <div className="relative p-4 space-y-3">
         <RefineCardHeader
           tier={tier}
           enchant={enchant}
@@ -74,56 +74,114 @@ export function RefineCard({
           refinedItemId={refinedItemId}
           resStyle={resStyle}
           metrics={metrics}
+          buyCity={buyOrderCity}
+          sellCity={sellOrderCity}
         />
 
-        <div className="grid grid-cols-1 gap-4 mt-2">
-          {/* Buy Ingredient Box */}
-          <RefineCardStatBox
-            city={buyOrderCity}
-            typeLabel="Raw"
-            typeLabelClass="bg-black/20 text-muted-foreground"
-            displayName={getRefineDisplayName(resourceType, "raw")}
-            amountLabel={`x${REFINING_RECIPES[tier]?.rawAmount || 0}`}
-            timestamp={timestamps?.buy}
-            marketPriceLabel={
-              metrics.hasMarketPrices.buy
-                ? `Mkt: ${formatMoney(marketPrice?.buy || 0)}`
-                : "Price Missing"
+        {/* 2x1 Grid Layout */}
+        <div className="grid grid-cols-2 gap-2.5 items-stretch">
+          {/* Box 1: Primary Raw Material */}
+          <div
+            className={
+              metrics.intermediateKey
+                ? "col-span-1 h-full"
+                : "col-span-2 h-full"
             }
-            isMarketPriceReliable={metrics.hasMarketPrices.buy}
-            itemId={rawItemId}
-            inputValue={buyPriceInput}
-            inputColorClass="text-primary"
-            onInputChange={(val) => updatePrice(tierKey, "buy", val)}
-            footer={{
-              label: "Prod Cost",
-              value: formatMoney(metrics.costPerUnit),
-            }}
-          />
+          >
+            <RefineCardStatBox
+              city={buyOrderCity}
+              typeLabel="Raw"
+              typeLabelClass="bg-black/20 text-muted-foreground"
+              displayName={getRefineDisplayName(resourceType, "raw")}
+              amountLabel={`x${REFINING_RECIPES[tier]?.rawAmount || 0}`}
+              timestamp={timestamps?.buy}
+              marketPriceLabel={
+                metrics.hasMarketPrices.buy
+                  ? `Mkt: ${formatMoney(marketPrice?.buy || 0)}`
+                  : "Price Missing"
+              }
+              isMarketPriceReliable={metrics.hasMarketPrices.buy}
+              itemId={rawItemId}
+              inputValue={buyPriceInput}
+              inputColorClass="text-primary"
+              onInputChange={(val) => updatePrice(tierKey, "buy", val)}
+              action="Buy"
+              className="h-full"
+            />
+          </div>
 
-          {/* Sell Product Box */}
-          <RefineCardStatBox
-            city={sellOrderCity}
-            typeLabel="Product"
-            typeLabelClass="bg-green-500/20 text-green-500"
-            displayName={getRefineDisplayName(resourceType, "refined")}
-            timestamp={timestamps?.sell}
-            marketPriceLabel={
-              metrics.hasMarketPrices.sell
-                ? `Mkt: ${formatMoney(marketPrice?.sell || 0)}`
-                : "Price Missing"
-            }
-            isMarketPriceReliable={metrics.hasMarketPrices.sell}
-            itemId={refinedItemId}
-            inputValue={sellPriceInput}
-            inputColorClass="text-green-500 focus-visible:ring-green-500/40"
-            onInputChange={(val) => updatePrice(tierKey, "sell", val)}
-          />
+          {/* Box 2: Intermediate Material (T-1 Refined) - Only show if needed (T3+) */}
+          {metrics.intermediateKey && (
+            <div className="col-span-1 h-full">
+              <RefineCardStatBox
+                city={sellOrderCity}
+                typeLabel="Ingredient"
+                typeLabelClass="bg-amber-500/20 text-amber-500"
+                displayName={getRefineDisplayName(resourceType, "refined")}
+                amountLabel={`x${
+                  REFINING_RECIPES[tier]?.refinedPrevAmount || 0
+                }`}
+                marketPriceLabel={
+                  metrics.intermediatePrice > 0
+                    ? `Mkt: ${formatMoney(metrics.intermediatePrice)}`
+                    : "Price Missing"
+                }
+                isMarketPriceReliable={metrics.intermediatePrice > 0}
+                itemId={getRefinedItemId(
+                  resourceType,
+                  parseInt(metrics.intermediateKey.split(".")[0]),
+                  parseInt(metrics.intermediateKey.split(".")[1])
+                )}
+                inputValue={metrics.intermediatePrice}
+                inputColorClass="text-amber-500"
+                onInputChange={(val) => {
+                  if (metrics.intermediateKey) {
+                    updatePrice(metrics.intermediateKey, "sell", val);
+                  }
+                }}
+                action="Buy"
+                footer={{
+                  label: "Prev Tier",
+                  value: `T${metrics.intermediateKey}`,
+                }}
+                className="h-full"
+              />
+            </div>
+          )}
+
+          {/* Box 3: Product / Result (Full Width) */}
+          <div className="col-span-2">
+            <RefineCardStatBox
+              city={sellOrderCity}
+              typeLabel="Product"
+              typeLabelClass="bg-green-500/20 text-green-500"
+              displayName={getRefineDisplayName(resourceType, "refined")}
+              timestamp={timestamps?.sell}
+              marketPriceLabel={
+                metrics.hasMarketPrices.sell
+                  ? `Mkt: ${formatMoney(marketPrice?.sell || 0)}`
+                  : "Price Missing"
+              }
+              isMarketPriceReliable={metrics.hasMarketPrices.sell}
+              itemId={refinedItemId}
+              inputValue={sellPriceInput}
+              inputColorClass="text-green-500 focus-visible:ring-green-500/40"
+              onInputChange={(val) => updatePrice(tierKey, "sell", val)}
+              action="Sell"
+              footer={{
+                label: "Total Sales",
+                value: formatMoney(
+                  (sellPriceInput * metrics.totalProfit) /
+                    (metrics.profitPerUnit || 1)
+                ),
+              }}
+            />
+          </div>
         </div>
       </div>
 
       {/* Card Footer: Progress Bar Viz */}
-      <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 group-hover:bg-primary/5 transition-colors duration-500">
+      <div className="h-1 w-full bg-black/5 dark:bg-white/5 transition-colors duration-500">
         <div
           className={`h-full transition-all duration-1000 ${
             metrics.totalProfit >= 0 ? "bg-green-500/50" : "bg-red-500/50"
