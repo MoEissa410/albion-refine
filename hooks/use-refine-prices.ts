@@ -25,7 +25,8 @@ import {
 export function useRefinePrices(
   resourceType: ResourceType,
   buyOrderCity: string,
-  sellOrderCity: string
+  sellOrderCity: string,
+  server: "Americas" | "Asia" | "Europe" = "Americas"
 ) {
   const hydratePrices = useRefineStore((state) => state.hydratePrices);
 
@@ -47,10 +48,16 @@ export function useRefinePrices(
 
   // 3. Automated API Fetching via TanStack Query
   const { data: livePrices, dataUpdatedAt } = useQuery({
-    queryKey: ["refine_prices", resourceType, buyOrderCity, sellOrderCity],
+    queryKey: [
+      "refine_prices",
+      resourceType,
+      buyOrderCity,
+      sellOrderCity,
+      server,
+    ],
     queryFn: async () => {
       const cities = Array.from(new Set([buyOrderCity, sellOrderCity]));
-      const apiPrices = await getItemPrices(allIds, cities);
+      const apiPrices = await getItemPrices(allIds, cities, server);
 
       const result: Record<
         TierKey,
@@ -91,9 +98,18 @@ export function useRefinePrices(
           }
 
           if (type === "raw" && p.city === buyOrderCity) {
-            if (p.buy_price_max > result[key].buy) {
-              result[key].buy = p.buy_price_max;
-              result[key].buyTimestamp = p.buy_price_max_date;
+            // Priority: Cheapest Sell Price (what you pay to get it now)
+            // Fallback: Highest Buy Order
+            const rawPrice =
+              p.sell_price_min > 0 ? p.sell_price_min : p.buy_price_max;
+            if (rawPrice > 0) {
+              if (result[key].buy === 0 || rawPrice < result[key].buy) {
+                result[key].buy = rawPrice;
+                result[key].buyTimestamp =
+                  p.sell_price_min > 0
+                    ? p.sell_price_min_date
+                    : p.buy_price_max_date;
+              }
             }
           } else if (type === "refined" && p.city === sellOrderCity) {
             if (p.sell_price_min > 0) {

@@ -16,8 +16,19 @@ import { AlbionPrice } from "./types";
 export async function getItemPrices(
   itemId: string,
   locations?: string[],
+  server: "Americas" | "Asia" | "Europe" = "Europe",
   qualities?: number[]
 ): Promise<AlbionPrice[]> {
+  // Determine correct API endpoint based on server
+  const serverDomains = {
+    Americas: "west",
+    Asia: "east",
+    Europe: "europe",
+  };
+
+  const domain = serverDomains[server] || "west";
+  const baseUrl = `https://${domain}.albion-online-data.com/api/v2/stats/prices`;
+
   // Strategy: If no locations are specified, default to fetching ALL major cities.
   // This ensures the user sees a complete market overview by default.
   const targetLocations =
@@ -32,7 +43,7 @@ export async function getItemPrices(
   // The caller is responsible for ensuring individual IDs are valid or encoded if needed
   // (though Albion IDs generally use chars that are safe except @, which this API handles raw).
   const res = await fetch(
-    `https://www.albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${locs}&qualities=${quals}`,
+    `${baseUrl}/${itemId}?locations=${locs}&qualities=${quals}`,
     {
       next: { revalidate: 60 },
     }

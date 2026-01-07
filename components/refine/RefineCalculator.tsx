@@ -42,7 +42,7 @@ const seedPrices = async (): Promise<
 
   try {
     // API Call (Server-to-Server)
-    const apiPrices = await getItemPrices(batchIds);
+    const apiPrices = await getItemPrices(batchIds, [], "Europe");
 
     // Aggregate prices by ID to find the best market signals
     const aggregated: Record<

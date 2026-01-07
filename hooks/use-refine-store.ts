@@ -48,6 +48,7 @@ interface RefineState {
   shopFee: number;
   buyOrderCity: string;
   sellOrderCity: string;
+  server: "Americas" | "Asia" | "Europe";
   quantity: number;
   prices: Record<TierKey, TierPrice>;
   marketPrices: Record<TierKey, TierPrice>;
@@ -59,6 +60,7 @@ interface RefineState {
   setShopFee: (v: number) => void;
   setBuyOrderCity: (v: string) => void;
   setSellOrderCity: (v: string) => void;
+  setServer: (v: "Americas" | "Asia" | "Europe") => void;
   setQuantity: (v: number) => void;
   updatePrice: (key: TierKey, field: "buy" | "sell", value: number) => void;
 }
@@ -71,6 +73,7 @@ export const useRefineStore = create<RefineState>((set) => ({
   shopFee: 500,
   buyOrderCity: ALBION_CITIES[0],
   sellOrderCity: ALBION_CITIES[1] ?? ALBION_CITIES[0],
+  server: "Europe",
   quantity: 999,
   prices: createEmptyPrices(),
   marketPrices: createEmptyPrices(),
@@ -83,14 +86,30 @@ export const useRefineStore = create<RefineState>((set) => ({
       Object.entries(input).forEach(([key, value]) => {
         if (!value) return;
         const k = key as TierKey;
+
+        // PROTECT USER EDITS:
+        // Only auto-update prices if they are 0 or still match the previous market price.
+        // If a user manually typed a price, it will differ from state.marketPrices[k], and we won't overwrite it.
+        const currentPrice = state.prices[k];
+        const currentMarket = state.marketPrices[k];
+
         nextPrices[k] = {
-          buy: value.buy ?? nextPrices[k].buy,
-          sell: value.sell ?? nextPrices[k].sell,
+          buy:
+            currentPrice.buy === 0 || currentPrice.buy === currentMarket.buy
+              ? value.buy ?? currentPrice.buy
+              : currentPrice.buy,
+          sell:
+            currentPrice.sell === 0 || currentPrice.sell === currentMarket.sell
+              ? value.sell ?? currentPrice.sell
+              : currentPrice.sell,
         };
+
+        // Always update market prices for reference
         nextMarketPrices[k] = {
-          buy: value.buy ?? nextMarketPrices[k].buy,
-          sell: value.sell ?? nextMarketPrices[k].sell,
+          buy: value.buy ?? currentMarket.buy,
+          sell: value.sell ?? currentMarket.sell,
         };
+
         const v = value as Partial<TierPrice> & {
           buyTimestamp?: string;
           sellTimestamp?: string;
@@ -110,6 +129,7 @@ export const useRefineStore = create<RefineState>((set) => ({
   setShopFee: (shopFee) => set({ shopFee }),
   setBuyOrderCity: (buyOrderCity) => set({ buyOrderCity }),
   setSellOrderCity: (sellOrderCity) => set({ sellOrderCity }),
+  setServer: (server) => set({ server }),
   setQuantity: (quantity) => set({ quantity }),
   updatePrice: (key, field, value) =>
     set((state) => ({

@@ -52,6 +52,7 @@ export function RefineControls() {
   const quantity = useRefineStore((state) => state.quantity);
   const buyOrderCity = useRefineStore((state) => state.buyOrderCity);
   const sellOrderCity = useRefineStore((state) => state.sellOrderCity);
+  const server = useRefineStore((state) => state.server);
 
   // Global Store Actions
   const setResourceType = useRefineStore((state) => state.setResourceType);
@@ -61,11 +62,12 @@ export function RefineControls() {
   const setQuantity = useRefineStore((state) => state.setQuantity);
   const setBuyOrderCity = useRefineStore((state) => state.setBuyOrderCity);
   const setSellOrderCity = useRefineStore((state) => state.setSellOrderCity);
+  const setServer = useRefineStore((state) => state.setServer);
 
   const resStyle = getResourceStyle(resourceType);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-5 md:gap-7">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-5 md:gap-7">
       {/* 1. RESOURCE TYPE */}
       <div className="space-y-2.5">
         <Label className="text-[11px] uppercase tracking-wider font-extrabold text-muted-foreground flex items-center gap-1.5">
@@ -249,6 +251,33 @@ export function RefineControls() {
                 {city}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 8. SERVER SELECTOR */}
+      <div className="space-y-2.5">
+        <Label className="text-[11px] uppercase tracking-wider font-extrabold text-muted-foreground flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/40" />
+          Server Region
+        </Label>
+        <Select
+          value={server}
+          onValueChange={(v) => setServer(v as "Americas" | "Asia" | "Europe")}
+        >
+          <SelectTrigger className="glass-input bg-background h-12 rounded-2xl border-none shadow-sm font-black text-xs px-3">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-background/95 backdrop-blur-xl border-white/10 rounded-2xl p-1">
+            <SelectItem value="Americas" className="rounded-xl font-bold py-2">
+              Americas (West)
+            </SelectItem>
+            <SelectItem value="Asia" className="rounded-xl font-bold py-2">
+              Asia (East)
+            </SelectItem>
+            <SelectItem value="Europe" className="rounded-xl font-bold py-2">
+              Europe
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
